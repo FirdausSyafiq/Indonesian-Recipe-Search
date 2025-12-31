@@ -1,0 +1,22 @@
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Large Files & Generated Index
+*.npy
+*.index
+backend/faiss.index
+backend/embeddings.npy
+backend/metadata.json
+
+# Dataset (Optional: Kalau filenya besar > 100MB sebaiknya di-ignore, tapi kalau kecil boleh di-push)
+# dataset/Indonesian_Food_Recipes.csv
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
