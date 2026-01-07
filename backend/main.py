@@ -52,41 +52,73 @@ def search(q: str, k: int = 100):
         return []
 
     results = []
+    
+    # Preprocessing query sederhana untuk pencarian keyword (case insensitive)
+    # + QUERY EXPANSION (Sinonim)
+    query_terms = q.lower().split()
+    expanded_terms = set(query_terms) # Gunakan set agar tidak ada duplikat
+    
+    # Kamus sinonim sederhana (Bisa ditambah sesuai kebutuhan)
+    synonyms = {
+        "cabai": "cabe",
+        "cabe": "cabai",
+        "lombok": "cabe",
+        "telur": "telor",
+        "telor": "telur",
+        "ayam": "daging ayam",
+        "sapi": "daging sapi"
+    }
+    
+    # Tambahkan sinonim ke dalam pencarian keyword
+    for term in query_terms:
+        if term in synonyms:
+            expanded_terms.add(synonyms[term])
+            
+    # Convert kembali ke list untuk iterasi
+    search_keywords = list(expanded_terms)
+    
     for score, idx in zip(D[0], I[0]):
-        # Filter skor minimum
+        # 1. Filter Sampah Mutlak
         if score < 0.15:
             continue
             
         m = metadata[idx]
-        
-        # --- FILTER TAMBAHAN (KEYWORD MATCHING) ---
-        # Karena Semantic Search terlalu "kreatif" (menganggap babi mirip kambing),
-        # kita bantu dengan filter kata kunci sederhana untuk query pendek.
-        
-        query_lower = q.lower()
         title_lower = m["title"].lower()
         ingredients_lower = m["ingredients"].lower()
         
-        # Jika query pendek (satu kata) dan skornya "meragukan" (di bawah 0.6),
-        # pastikan setidaknya ada kemiripan kata (substring match)
-        # PENGECUALIAN: Jangan filter jika query bahasa inggris (karena resepnya bahasa indonesia)
-        # Ini dilema. "Pig" tidak ada di teks "Kambing", jadi harusnya terfilter.
-        # "Chili" tidak ada di teks "Cabe", tapi kita mau ini muncul.
+        # --- LOGIKA HYBRID (VECTOR + KEYWORD) ---
+        is_relevant = False
         
-        # Strategi: Tampilkan skor di frontend untuk debug user (opsional), 
-        # tapi di sini kita kembalikan apa adanya dulu karena memfilter "pig" 
-        # secara hardcode akan merusak pencarian "chili" -> "cabe".
+        # Kategori 1: High Confidence (Skor Vektor Tinggi)
+        # Jika skor > 0.50, kita percaya penuh pada Semantic Search
+        if score > 0.50:
+            is_relevant = True
+            
+        # Kategori 2: Low Confidence (Skor Vektor Rendah 0.15 - 0.50)
+        # Validasi manual: Cek apakah ada kata kunci query di Judul/Bahan?
+        else:
+            # Cek apakah SALAH SATU kata kunci (termasuk sinonim) muncul di teks
+            # Contoh: Query "Cabai", tapi teksnya "Cabe rawit" -> MATCH karena sinonim!
+            match_found = any(term in title_lower or term in ingredients_lower for term in search_keywords)
+            
+            if match_found:
+                is_relevant = True
+            else:
+                # Skor kecil DAN tidak ada kata yang cocok = Kemungkinan besar tidak relevan
+                # Contoh: Query "Kambing", Hasil "Babi Kecap" (Skor 0.4 tapi kata 'kambing' tidak ada)
+                is_relevant = False
         
-        results.append({
-            "title": m["title"],
-            "ingredients": m["ingredients"],
-            "steps": m["steps"],
-            "url": m["url"],
-            "category": m["category"],
-            "total_ingredients": m["total_ingredients"],
-            "total_steps": m["total_steps"],
-            "loves": m["loves"],
-            "score": float(score)  # Sertakan skor agar user bisa lihat relevansinya
-        })
+        if is_relevant:
+            results.append({
+                "title": m["title"],
+                "ingredients": m["ingredients"],
+                "steps": m["steps"],
+                "url": m["url"],
+                "category": m["category"],
+                "total_ingredients": m["total_ingredients"],
+                "total_steps": m["total_steps"],
+                "loves": m["loves"],
+                "score": float(score)
+            })
 
     return results

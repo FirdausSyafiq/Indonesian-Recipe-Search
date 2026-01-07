@@ -20,3 +20,6 @@ backend/metadata.json
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+
+# Documentation (Excluded as requested)
+documentation/
