@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 import re
 
 CSV_PATH = "../dataset/Indonesian_Food_Recipes.csv"   # ganti sesuai nama file dataset Anda
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_NAME = "firqaaa/indo-sentence-bert-base"
 
 def clean(s):
     if pd.isna(s): 
